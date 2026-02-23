@@ -88,8 +88,8 @@ if (!window.location.href.match(/\/item\?/)) { // ignore if displaying a news it
     more_td = $(".title").last();
     if (more_td.text().trim() != "More") more_td = null;  // fixed after HN change April 15, 2015
 
-    // add the controls only in news listing pages
-    if (titles > 29) {
+    // add controls on any listing page that has stories (including short last pages)
+    if (titles > 0) {
         $($(".pagetop")[0]).append("&nbsp; <span class='mark_all_read' title='Mark all read'><a href='javascript:void(0);'><img src='"+chrome.runtime.getURL("/images/HNMarkAllRead-18.png")+"'></img></a></span>"+
             "<span id='hide_span' class='hide_news_span'><input type='checkbox' id='hide_read_items' /><label for='hide_read_items'>Hide read</label></span>");
         if (localStorage["hide_marked_urls"] == 'true') $("#hide_read_items").attr("checked", true);
