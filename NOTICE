@@ -1,0 +1,8 @@
+This project is a maintained fork of the original "HNMarkAllRead" extension.
+
+Upstream original:
+- Project: https://github.com/danmaz74/HNMarkAllRead
+- Author: Daniele Mazzini (https://github.com/danmaz74/)
+- Original article: http://danmaz74.me/2012/10/15/save-even-more-time-on-hacker-news/
+
+The fork keeps compatibility with current Hacker News pages and modern Chrome extension requirements.

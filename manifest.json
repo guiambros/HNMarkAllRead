@@ -1,8 +1,9 @@
 {
   "name": "Hacker News: Mark All Read",
-  "version": "1.61",
+  "version": "1.62",
   "manifest_version": 3,
   "description": "Save time on HN by marking read the titles and comments you already scanned. And more.",
+  "homepage_url": "https://github.com/ib0ndar/HNMarkAllRead",
   "host_permissions": [
     "https://news.ycombinator.com/*"
   ],
@@ -11,9 +12,25 @@
       "matches": [
         "https://news.ycombinator.com/*"
       ],
+      "exclude_matches": [
+        "https://news.ycombinator.com/item*"
+      ],
       "js": [
-        "jquery.min.js",
-        "script.js"
+        "common.js",
+        "list.js"
+      ],
+      "css": [
+        "styles.css"
+      ],
+      "run_at": "document_end"
+    },
+    {
+      "matches": [
+        "https://news.ycombinator.com/item*"
+      ],
+      "js": [
+        "common.js",
+        "item.js"
       ],
       "css": [
         "styles.css"
