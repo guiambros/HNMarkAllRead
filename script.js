@@ -60,9 +60,7 @@ if (!window.location.href.match(/\/item\?/)) { // ignore if displaying a news it
             // if following, check the number of comments and highlight
             if (followed_items[item_id]) {
                 following = true;
-
                 mainlink.css({color: "#7070b0"});
-
                 var unread_comments = comments - followed_items[item_id].read_comments;
 
                 if (unread_comments > 0) {
@@ -77,7 +75,6 @@ if (!window.location.href.match(/\/item\?/)) { // ignore if displaying a news it
         if (marked_read_urls[mainlink.attr("href")] && !following) {
             mainlink.css({color: "#828282"});
             titles_marked++;
-
             hideShowRow(mainlink);
         }
 
@@ -103,7 +100,6 @@ if (!window.location.href.match(/\/item\?/)) { // ignore if displaying a news it
             $(".subtext").each(function(i,sub) {
             var mainlink = $(".title a", $(sub).parent().prev()).first()
 
-
                 // add the link to the "read" ones
                 if (!marked_read_urls[mainlink.attr("href")]) {
                     // add the url to the read ones
@@ -111,7 +107,6 @@ if (!window.location.href.match(/\/item\?/)) { // ignore if displaying a news it
 
                     // give the "read" color
                     mainlink.css({color: "#828282"});
-
                     hideShowRow(mainlink);
                 }
             });
@@ -182,7 +177,6 @@ if (!window.location.href.match(/\/item\?/)) { // ignore if displaying a news it
                 var indentation = $('td.ind img', tr)[0].width;
                 var comment_id = $('span.age a', tr)[0].href.match(/[0-9]+/)[0];
                 var node = $('> td', tr)[0]; // "node" is the sole td child of the tr.
-
                 comments_total++;
 
                 // read/unread comments management
@@ -205,8 +199,7 @@ if (!window.location.href.match(/\/item\?/)) { // ignore if displaying a news it
                 if (depth > last_depth) {
                     parents.push(last_node);
                     first_child = true;
-                } else
-                {
+                } else {
                     first_child = false;
 
                     if (depth < last_depth) {
@@ -253,17 +246,11 @@ if (!window.location.href.match(/\/item\?/)) { // ignore if displaying a news it
     $(".mark_all_read").click(function(){
         $(".unread_comment_td").each(function(i,el) {
             var sel = $(el);
-
             var comment_id = sel.data("comment_id");
-
             marked_read_comments[comment_id] = (new Date()).getTime();
-
             sel.removeClass("unread_comment_td").addClass("read_comment_td");
-
             var tr = $(".comment_tr_"+comment_id)
-
             tr.removeClass("unread_comment_tr").addClass("read_comment_tr");
-
             comments_unread = 0;
             if (followed_items[item_id]) {
                 followed_items[item_id].read_comments = comments_total;
@@ -273,13 +260,11 @@ if (!window.location.href.match(/\/item\?/)) { // ignore if displaying a news it
         });
 
         localStorage['marked_read_comments'] = JSON.stringify(marked_read_comments);
-
         comments_counter.text("unread comments: 0/"+comments_total);
     });
 
     /////////////////////////////////
     // following this item
-
     var item_id = window.location.href.match(/[0-9]+/)[0];
     if (followed_items[item_id]) {
         $("#follow_item").prop("checked", true);
@@ -300,7 +285,6 @@ if (!window.location.href.match(/\/item\?/)) { // ignore if displaying a news it
 
     /////////////////////////////////
     // hiding marked comments
-
     if (localStorage["hide_marked_comments"] == 'true') {
         $("#hide_read_items").prop("checked", true);
         hideMarkedComments(true);
@@ -332,7 +316,6 @@ if (!window.location.href.match(/\/item\?/)) { // ignore if displaying a news it
     // set collapsible comments up
     for (var id in collapsible_parents) {
         var parent = $(collapsible_parents[id]);
-
         parent.addClass("collapsible_comment");
 
         $("<div class='comment_collapse' title='expand/collapse'>-</div>").appendTo(parent).click((function(id) { return function(){ // toggle collapse
@@ -373,7 +356,6 @@ if (!window.location.href.match(/\/item\?/)) { // ignore if displaying a news it
 
     /////////////////////////////
     // utilities
-
     function addCssRule(rule) {
         sheet.insertRule(rule, sheet.cssRules.length)
     }
