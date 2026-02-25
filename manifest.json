@@ -1,6 +1,6 @@
 {
   "name": "Hacker News: Mark All Read",
-  "version": "1.61",
+  "version": "1.63",
   "manifest_version": 3,
   "description": "Save time on HN by marking read the titles and comments you already scanned. And more.",
   "host_permissions": [

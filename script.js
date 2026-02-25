@@ -48,8 +48,6 @@ if (!window.location.href.match(/\/item\?/)) { // ignore if displaying a news it
 
         titles++;
 
-        console.log(mainlink.html());
-
         // check if following
         var following = false;
         var comments_a = sub.childNodes[9];
@@ -82,7 +80,6 @@ if (!window.location.href.match(/\/item\?/)) { // ignore if displaying a news it
             hideShowRow(mainlink);
         }
 
-
     });
 
     more_td = $(".title").last();
@@ -94,9 +91,14 @@ if (!window.location.href.match(/\/item\?/)) { // ignore if displaying a news it
             "<span id='hide_span' class='hide_news_span'><input type='checkbox' id='hide_read_items' /><label for='hide_read_items'>Hide read</label></span>");
         if (localStorage["hide_marked_urls"] == 'true') $("#hide_read_items").attr("checked", true);
 
-        if (more_td) more_td.append("&nbsp; <span class='mark_all_read near_more' title='Mark all read'><a href='javascript:void(0);'><img src='"+chrome.runtime.getURL("/images/HNMarkAllRead-18.png")+"'></img></a></span>");
+        if (more_td) {
+            more_td.append("&nbsp; <span class='mark_all_read near_more' title='Mark all read'><a href='javascript:void(0);'><img src='"+chrome.runtime.getURL("/images/HNMarkAllRead-18.png")+"'></img></a></span>");
+        } else {
+            // Last page - add a new row for the button
+            $(".subtext").last().parent().after("<tr><td colspan='2'></td><td class='mark_all_read_footer'><span class='mark_all_read near_more' title='Mark all read'><a href='javascript:void(0);'><img src='"+chrome.runtime.getURL("/images/HNMarkAllRead-18.png")+"'></img></a></span></td></tr>");
+        }
 
-        $(".mark_all_read").click(function(){
+        $(".mark_all_read").click(function () {
             $(".subtext").each(function(i,sub) {
             var mainlink = $(".title a", $(sub).parent().prev()).first()
 
