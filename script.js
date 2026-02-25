@@ -36,10 +36,11 @@ if (!window.location.href.match(/\/item\?/)) { // ignore if displaying a news it
 
     // hide or show the row depending on "hide read" status
     function hideShowRow(mainlink) {
+        var titleRow = mainlink.closest("tr");
         if (localStorage["hide_marked_urls"] == 'true' && !mainlink.data("following")) {
-            var last = mainlink.parent().parent().hide().next().hide().next();
+            var last = titleRow.hide().next().hide().next();
             if (!last.children("a")[0]) last.hide();
-        } else mainlink.parent().parent().show().next().show().next().show();
+        } else titleRow.show().next().show().next().show();
     }
 
     // check which pieces of news have already been marked read and change their color
@@ -89,7 +90,7 @@ if (!window.location.href.match(/\/item\?/)) { // ignore if displaying a news it
     if (titles > 0) {
         $($(".pagetop")[0]).append("&nbsp; <span class='mark_all_read' title='Mark all read'><a href='javascript:void(0);'><img src='"+chrome.runtime.getURL("/images/HNMarkAllRead-18.png")+"'></img></a></span>"+
             "<span id='hide_span' class='hide_news_span'><input type='checkbox' id='hide_read_items' /><label for='hide_read_items'>Hide read</label></span>");
-        if (localStorage["hide_marked_urls"] == 'true') $("#hide_read_items").attr("checked", true);
+        if (localStorage["hide_marked_urls"] == 'true') $("#hide_read_items").prop("checked", true);
 
         if (more_td) {
             more_td.append("&nbsp; <span class='mark_all_read near_more' title='Mark all read'><a href='javascript:void(0);'><img src='"+chrome.runtime.getURL("/images/HNMarkAllRead-18.png")+"'></img></a></span>");
@@ -119,13 +120,8 @@ if (!window.location.href.match(/\/item\?/)) { // ignore if displaying a news it
         });
 
         $("#hide_read_items").click(function() {
-            localStorage["hide_marked_urls"] = !!$("#hide_read_items").attr("checked");
-
-            $(".title").each(function(i,el) {
-                var mainlink = $($(el).children("a")[0]);
-
-                if (marked_read_urls[mainlink.attr("href")]) hideShowRow(mainlink);
-            });
+            localStorage["hide_marked_urls"] = $("#hide_read_items").prop("checked");
+            location.reload();
         });
     }
 } else { // comments page
@@ -286,11 +282,11 @@ if (!window.location.href.match(/\/item\?/)) { // ignore if displaying a news it
 
     var item_id = window.location.href.match(/[0-9]+/)[0];
     if (followed_items[item_id]) {
-        $("#follow_item").attr("checked", true);
+        $("#follow_item").prop("checked", true);
     }
 
     $("#follow_item").click(function(){
-        if ($("#follow_item").attr("checked")) {
+        if ($("#follow_item").prop("checked")) {
             followed_items[item_id] = {
                 time: (new Date()).getTime(),
                 read_comments: comments_total - comments_unread
@@ -306,7 +302,7 @@ if (!window.location.href.match(/\/item\?/)) { // ignore if displaying a news it
     // hiding marked comments
 
     if (localStorage["hide_marked_comments"] == 'true') {
-        $("#hide_read_items").attr("checked", true);
+        $("#hide_read_items").prop("checked", true);
         hideMarkedComments(true);
     } else {
         hideMarkedComments(false);
@@ -323,9 +319,9 @@ if (!window.location.href.match(/\/item\?/)) { // ignore if displaying a news it
     }
 
     $("#hide_read_items").click(function() {
-        localStorage["hide_marked_comments"] = !!$("#hide_read_items").attr("checked");
+        localStorage["hide_marked_comments"] = $("#hide_read_items").prop("checked");
 
-        hideMarkedComments($("#hide_read_items").attr("checked"));
+        hideMarkedComments($("#hide_read_items").prop("checked"));
     });
 
     comments_counter.text("unread comments: "+comments_unread+"/"+comments_total);

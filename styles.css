@@ -1,7 +1,5 @@
 .mark_all_read img {
-    //border: 1px solid white;
-    position: relative;
-    top: 2px;
+    vertical-align: middle;
 }
 
 .mark_all_read img:hover {
@@ -10,9 +8,13 @@
 }
 
 .hide_news_span {
-    position: relative;
-    top: -4px;
     font-size: 10px;
+    vertical-align: middle;
+}
+
+.hide_news_span input,
+.hide_news_span label {
+    vertical-align: middle;
 }
 
 .hide_comments_span {
@@ -22,8 +24,7 @@
 }
 
 .near_more {
-    position: relative;
-    top: 2px;
+    vertical-align: middle;
 }
 
 #parent_div {
