@@ -1,23 +1,24 @@
-This is a fork of the original Chrome extension by Dan Mazzini (danmaz74). The original extension hasn't been updated, so this fork fixes compatibility with current HN layout, and updates to Manifest v3 (which will be mandatory starting in 2024). All the credit goes to the original author [1][2].
+This is a maintained fork of the original extension by Dan Mazzini (danmaz74), updated to restore compatibility with the current Hacker News layout and modern Chrome extension standards. Full credit for the original concept and implementation belongs to the original author [1][2].
 
-Source code available here: https://github.com/guiambros/HNMarkAllRead
+Source code and support: https://github.com/guiambros/HNMarkAllRead
 
-This extension helps you save time by improving the usability of the Hacker News with the following six key features:
+Features:
 
-1) Mark Stories as Read - No need to scan the whole list of news to find new entries! Simply press the button to mark all entries as read and gray them out.
+* Mark Stories as Read: Easily distinguish new stories from previously viewed items. A single click grays out all read entries, so you don't need to keep scanning the HN front page.
 
-2) Mark Comments as Read - Same as Mark Stories as Read, but for comments.
+* Mark Comments as Read: Prevent re-reading the same discussions in active threads. Mark all comments as read, allowing for faster navigation of long, ongoing discussions.
 
-3) Hide Read Comments - When used in combination with Mark Comments as Read, you can easily see only new comments since you've last marked them as read.
+* Hide Read Comments: Hide all read comments, so you can focus attention only on comments added since the last visit.
 
-4) Follow Comments - Allows you to follow comments for a particular story. Followed stories are shown in a different color in the index whenever there's a new comment posted.
+* Follow Comments: Stay updated on interesting threads without constantly checking the page.
 
-5) Show Parent Comment - Hover over the "Show parent" next to each comment to quickly see the parent comment. This is incredibly helpful for deeply nested threads, so you can easily understand the parent context of the current reply.
+* Show Parent Comment: Understand context immediately in deeply nested threads. Hovering over the "Show parent" link displays the immediate parent comment inline, so you don't have to scroll up to understand the context.
 
-6) Collapse / Expand All Comments - You can collapse all comments so you can more quickly scan only the topline ones, and drill down when desired.
+* Collapse / Expand All Comments: Easily collapse or expand threads.
+
+* (NEW) Synchronization Across Multiple Browsers: sync read status across different devices logged in with the same Google profile. Data remains securely within the browser ecosystem and is not shared with anyone. You can enable it in the extension settings.
 
 Enjoy!
-
 
 ---
 
