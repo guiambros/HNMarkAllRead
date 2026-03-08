@@ -6,6 +6,13 @@
   "host_permissions": [
     "https://news.ycombinator.com/*"
   ],
+  "permissions": [
+    "storage"
+  ],
+  "options_ui": {
+    "page": "options.html",
+    "open_in_tab": false
+  },
   "content_scripts": [
     {
       "matches": [
