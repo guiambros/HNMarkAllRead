@@ -24,6 +24,8 @@ This extension improves the usability of the Hacker News website with the follow
 
 - **(NEW) Cloud Synchronization**: Opt-in to sync read status across devices. Data remains securely stored within your Chrome profile and is not shared with anyone. You can enable it in the extension settings.
 
+- **Data Management**: A new reset button in the settings allows you to clear all history and configurations from both your local browser and cloud storage at any time.
+
 We hope this extension will make your experience reading Hacker News much more convenient. Please [open an issue](https://github.com/guiambros/HNMarkAllRead/issues) for any bugs or feature requests.
 
 ![Screenshot #1](https://user-images.githubusercontent.com/205000/218369624-1e1d063f-c499-4452-af2e-b0f927cafa7c.png)
@@ -32,7 +34,7 @@ We hope this extension will make your experience reading Hacker News much more c
 
 
 ### Changelog:
-- 2026-03-07 - Added opt-in cloud synchronization for read status and settings
+- 2026-03-07 - Added opt-in cloud synchronization and data reset functionality
 - 2026-02-24 - Fix Hide Read functionality, broken due to new page formatting
 - 2026-02-23 - Fix bug on last page with fewer than 30 entries (thanks @ib0ndar)
 - 2023-11-24 - Published extension to Chrome Webstore

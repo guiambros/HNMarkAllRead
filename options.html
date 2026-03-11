@@ -9,23 +9,44 @@
     .sync-option { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 20px; }
     input[type="checkbox"] { margin-top: 4px; }
     .status { font-size: 0.85rem; color: green; display: none; margin-top: 10px; }
+    .danger-zone { margin-top: 30px; border-top: 1px solid #eee; padding-top: 15px; }
+    #reset-data { 
+      background: #fff; 
+      color: #d93025; 
+      border: 1px solid #fad2cf; 
+      padding: 6px 12px; 
+      border-radius: 4px; 
+      cursor: pointer; 
+      font-size: 0.8rem;
+      font-weight: 500;
+    }
+    #reset-data:hover { background: #fff5f4; }
+    .disclaimer { font-size: 0.75rem; color: #888; margin-top: 10px; line-height: 1.3; }
   </style>
 </head>
 <body>
   <h2>Settings</h2>
   <p class="description">
-    Hacker News: Mark All Read stores your data locally by default. You can enable <strong>Synchronization</strong> to share your HN read status across all computers where you're signed into Chrome.
+    Hacker News: Mark All Read stores your data locally by default. You can enable <strong>Synchronization</strong> to share your read status across all computers where you're signed into Chrome.
   </p>
   <div class="sync-option">
     <input type="checkbox" id="sync-enabled">
     <label for="sync-enabled">
       <strong>Enable Cloud Sync</strong><br>
       <span style="font-size: 0.8rem; color: #777;">
-        Uses your Google Profile to securely sync data. Your information is never shared with anyone.
+        Uses your Google Profile to securely sync data. Your information is never shared with third parties.
       </span>
     </label>
   </div>
   <div id="status" class="status">Settings saved!</div>
+
+  <div class="danger-zone">
+    <button id="reset-data">Reset Extension Data</button>
+    <p class="disclaimer">
+      <strong>Note:</strong> This will permanently clear all read history, followed items, and settings from both this computer and your Google Profile cloud storage. This only affects data stored by <em>Hacker News: Mark All Read</em> and will not touch any other extensions or browser data.
+    </p>
+  </div>
+
   <script src="options.js"></script>
 </body>
 </html>

@@ -70,6 +70,12 @@ chrome.storage.local.get({ sync_enabled: false, migrated_to_sync: false }, funct
                 }
             });
         } else {
+            // Check if settings are missing (likely reset) and clear localStorage accordingly
+            if (!migratedToSync && localStorage['marked_read_urls']) {
+                console.log("HNMarkAllRead: No settings found, clearing legacy local storage.");
+                localStorage.clear();
+            }
+
             callback({
                 followed_items: localStorage['followed_items'] ? JSON.parse(localStorage['followed_items']) : {},
                 marked_read_urls: localStorage['marked_read_urls'] ? JSON.parse(localStorage['marked_read_urls']) : {},

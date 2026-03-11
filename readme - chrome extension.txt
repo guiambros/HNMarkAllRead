@@ -13,9 +13,11 @@ Features:
 ✔ Show Parent Comment: Understand context immediately in deeply nested threads. Hovering over the "Show parent" link displays the immediate parent comment inline, so you don't have to scroll up to understand the context.
 
 ✔ Collapse / Expand All Comments: Easily collapse or expand threads.
+* (NEW) Synchronization Across Multiple Browsers: sync read status across different devices logged in with the same Google profile. Data remains securely within the browser ecosystem and is not shared with anyone. You can enable it in the extension settings.
 
-✔ (NEW) Synchronization Across Multiple Browsers: sync read status across different devices logged in with the same Google profile. Data remains securely within the browser ecosystem and is not shared with anyone. You can enable it in the extension settings.
+* Data Management: Easily clear all your local and cloud history using the Reset button in the settings.
 
+Enjoy!
 Enjoy a more seamless Hacker News experience!
 
 
