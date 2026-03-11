@@ -23,16 +23,23 @@
     
     .danger-zone { margin-top: 30px; border-top: 1px solid #eee; padding-top: 15px; }
     
+    button {
+      padding: 8px 16px; 
+      border-radius: 4px; 
+      cursor: pointer; 
+      font-size: 0.85rem;
+      font-weight: 500;
+      transition: background 0.2s;
+      border: 1px solid #ccc;
+      background: #f8f8f8;
+    }
+
     button#reset-data { 
       display: block !important;
       width: 100%;
       background-color: #d93025 !important; 
       color: white !important; 
       border: none !important;
-      padding: 10px 16px !important; 
-      border-radius: 4px !important; 
-      cursor: pointer !important; 
-      font-size: 0.9rem !important;
       font-weight: bold !important;
       box-shadow: 0 2px 4px rgba(0,0,0,0.2) !important;
       text-align: center !important;
@@ -48,6 +55,8 @@
     .debug-label { font-size: 0.7rem; font-weight: bold; color: #555; margin-top: 10px; display: block; }
     textarea { width: 100%; height: 100px; font-family: monospace; font-size: 0.7rem; background: #f9f9f9; border: 1px solid #ddd; margin-top: 5px; }
     .debug-toggle { font-size: 0.75rem; color: #0066c0; text-decoration: underline; cursor: pointer; display: block; margin-top: 20px; }
+    .debug-actions { margin-top: 10px; display: flex; gap: 10px; }
+    .small-btn { padding: 4px 8px; font-size: 0.7rem; }
   </style>
 </head>
 <body>
@@ -77,6 +86,11 @@
   <span class="debug-toggle" id="toggle-debug">Show Storage Debug Info</span>
   
   <div class="debug-zone" id="debug-zone">
+    <div class="debug-actions">
+      <button id="force-pull" class="small-btn">Force Sync from Cloud</button>
+      <button id="refresh-debug" class="small-btn">Refresh View</button>
+    </div>
+
     <span class="debug-label">Cloud Storage (chrome.storage.sync):</span>
     <textarea id="debug-sync" readonly></textarea>
     

@@ -29,20 +29,12 @@ function restore_options() {
 }
 
 function update_debug_info() {
-  // Sync Storage
   chrome.storage.sync.get(null, (data) => {
     document.getElementById('debug-sync').value = JSON.stringify(data, null, 2);
   });
-
-  // Local Extension Storage
   chrome.storage.local.get(null, (data) => {
     document.getElementById('debug-local').value = JSON.stringify(data, null, 2);
   });
-
-  // Legacy localStorage
-  // Note: This is the localStorage of the options page context
-  // To see the content script's LS, we'd need a message bridge, 
-  // but let's see what's here first.
   const lsData = {};
   for (let i = 0; i < localStorage.length; i++) {
     const key = localStorage.key(i);
@@ -53,29 +45,23 @@ function update_debug_info() {
 
 function reset_data() {
   const resetButton = document.getElementById('reset-data');
-  
   if (!isConfirming) {
     isConfirming = true;
     resetButton.innerText = "Are you sure? Click again to Reset";
     resetButton.style.backgroundColor = "#f29900";
-    
     confirmTimeout = setTimeout(() => {
       isConfirming = false;
       resetButton.innerText = "Reset Extension Data";
       resetButton.style.backgroundColor = "";
     }, 3000);
-    
     return;
   }
-
   clearTimeout(confirmTimeout);
   isConfirming = false;
   resetButton.innerText = "Reset Extension Data";
   resetButton.style.backgroundColor = "";
-
   const checkbox = document.getElementById('sync-enabled');
   checkbox.onchange = null; 
-
   chrome.storage.sync.clear(() => {
     chrome.storage.local.clear(() => {
       localStorage.clear();
@@ -84,6 +70,22 @@ function reset_data() {
       show_status("Data cleared successfully!");
       update_debug_info();
     });
+  });
+}
+
+function force_pull() {
+  const btn = document.getElementById('force-pull');
+  btn.innerText = "Syncing...";
+  btn.disabled = true;
+  
+  // Setting migrated_to_sync to false forces script.js to re-merge next time any HN page is loaded
+  chrome.storage.local.set({ migrated_to_sync: false }, () => {
+    show_status("Re-sync triggered! Refresh any HN tab.");
+    setTimeout(() => {
+      btn.innerText = "Force Sync from Cloud";
+      btn.disabled = false;
+      update_debug_info();
+    }, 1000);
   });
 }
 
@@ -105,4 +107,6 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('sync-enabled').onchange = save_options;
   document.getElementById('reset-data').onclick = reset_data;
   document.getElementById('toggle-debug').onclick = toggle_debug;
+  document.getElementById('refresh-debug').onclick = update_debug_info;
+  document.getElementById('force-pull').onclick = force_pull;
 });
