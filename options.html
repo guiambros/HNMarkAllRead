@@ -3,24 +3,43 @@
 <head>
   <title>HN Mark All Read Settings</title>
   <style>
-    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; padding: 20px; width: 350px; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; padding: 20px; width: 350px; background: white; color: black; }
     h2 { font-size: 1.2rem; margin-top: 0; }
     .description { font-size: 0.9rem; color: #666; margin-bottom: 20px; line-height: 1.4; }
     .sync-option { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 20px; }
     input[type="checkbox"] { margin-top: 4px; }
-    .status { font-size: 0.85rem; color: green; display: none; margin-top: 10px; }
-    .danger-zone { margin-top: 30px; border-top: 1px solid #eee; padding-top: 15px; }
-    #reset-data { 
-      background: #fff; 
-      color: #d93025; 
-      border: 1px solid #fad2cf; 
-      padding: 6px 12px; 
-      border-radius: 4px; 
-      cursor: pointer; 
-      font-size: 0.8rem;
-      font-weight: 500;
+    
+    #status { 
+      font-size: 0.85rem; 
+      color: green; 
+      opacity: 0; 
+      margin-top: 10px; 
+      transition: opacity 0.3s ease-in-out;
+      height: 1.2rem;
     }
-    #reset-data:hover { background: #fff5f4; }
+    #status.visible {
+      opacity: 1;
+    }
+    
+    .danger-zone { margin-top: 30px; border-top: 1px solid #eee; padding-top: 15px; }
+    
+    button#reset-data { 
+      display: block !important;
+      width: 100%;
+      background-color: #d93025 !important; 
+      color: white !important; 
+      border: none !important;
+      padding: 10px 16px !important; 
+      border-radius: 4px !important; 
+      cursor: pointer !important; 
+      font-size: 0.9rem !important;
+      font-weight: bold !important;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.2) !important;
+      text-align: center !important;
+    }
+    button#reset-data:hover { background-color: #b8291f !important; }
+    button#reset-data:active { background-color: #962118 !important; }
+    
     .disclaimer { font-size: 0.75rem; color: #888; margin-top: 10px; line-height: 1.3; }
   </style>
 </head>
@@ -38,12 +57,13 @@
       </span>
     </label>
   </div>
-  <div id="status" class="status">Settings saved!</div>
+  
+  <div id="status">Settings saved!</div>
 
   <div class="danger-zone">
     <button id="reset-data">Reset Extension Data</button>
     <p class="disclaimer">
-      <strong>Note:</strong> This will permanently clear all read history, followed items, and settings from both this computer and your Google Profile cloud storage. This only affects data stored by <em>Hacker News: Mark All Read</em> and will not touch any other extensions or browser data.
+      <strong>Note:</strong> This will permanently clear all read history and settings from both this computer and your Google Profile cloud storage.
     </p>
   </div>
 

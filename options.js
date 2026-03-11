@@ -1,11 +1,22 @@
+let statusTimeout;
+let isConfirming = false;
+let confirmTimeout;
+
+function show_status(text) {
+  const status = document.getElementById('status');
+  status.innerText = text;
+  status.classList.add('visible');
+  
+  if (statusTimeout) clearTimeout(statusTimeout);
+  statusTimeout = setTimeout(() => {
+    status.classList.remove('visible');
+  }, 2500);
+}
+
 function save_options() {
   const syncEnabled = document.getElementById('sync-enabled').checked;
   chrome.storage.local.set({ sync_enabled: syncEnabled }, function() {
-    const status = document.getElementById('status');
-    status.style.display = 'block';
-    setTimeout(function() {
-      status.style.display = 'none';
-    }, 2000);
+    show_status("Settings saved!");
   });
 }
 
@@ -16,32 +27,45 @@ function restore_options() {
 }
 
 function reset_data() {
-  if (confirm("Are you sure you want to clear ALL extension history and settings? This cannot be undone.")) {
-    // 1. Clear chrome.storage.sync
-    chrome.storage.sync.clear(function() {
-      // 2. Clear chrome.storage.local
-      chrome.storage.local.clear(function() {
-        // 3. Clear localStorage (must be done in content script context, but we can clear current tab context if it's the options page)
-        // Note: localStorage in the options page is different from the content script, 
-        // but the content script will be notified of storage.local changes if we add a listener, 
-        // or it will just see empty data on next load.
-        // For the content script's localStorage, we'll need to handle it there.
-        localStorage.clear();
-
-        const status = document.getElementById('status');
-        status.innerText = "All data cleared successfully!";
-        status.style.display = 'block';
-        document.getElementById('sync-enabled').checked = false;
-        
-        setTimeout(function() {
-          status.style.display = 'none';
-          status.innerText = "Settings saved!";
-        }, 3000);
-      });
-    });
+  const resetButton = document.getElementById('reset-data');
+  
+  if (!isConfirming) {
+    // First click: Ask for confirmation on the button itself
+    isConfirming = true;
+    resetButton.innerText = "Are you sure? Click again to Reset";
+    resetButton.style.backgroundColor = "#f29900"; // Orange
+    
+    // Reset button after 3 seconds if not clicked again
+    confirmTimeout = setTimeout(() => {
+      isConfirming = false;
+      resetButton.innerText = "Reset Extension Data";
+      resetButton.style.backgroundColor = ""; // Back to CSS default
+    }, 3000);
+    
+    return;
   }
+
+  // Second click: Perform the actual reset
+  clearTimeout(confirmTimeout);
+  isConfirming = false;
+  resetButton.innerText = "Reset Extension Data";
+  resetButton.style.backgroundColor = "";
+
+  const checkbox = document.getElementById('sync-enabled');
+  checkbox.onchange = null; 
+
+  chrome.storage.sync.clear(() => {
+    chrome.storage.local.clear(() => {
+      localStorage.clear();
+      checkbox.checked = false;
+      checkbox.onchange = save_options;
+      show_status("Data cleared successfully!");
+    });
+  });
 }
 
-document.addEventListener('DOMContentLoaded', restore_options);
-document.getElementById('sync-enabled').addEventListener('change', save_options);
-document.getElementById('reset-data').addEventListener('click', reset_data);
+document.addEventListener('DOMContentLoaded', () => {
+  restore_options();
+  document.getElementById('sync-enabled').onchange = save_options;
+  document.getElementById('reset-data').onclick = reset_data;
+});
