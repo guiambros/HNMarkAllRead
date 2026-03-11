@@ -1,24 +1,77 @@
-chrome.storage.local.get({ sync_enabled: false }, function(settings) {
+chrome.storage.local.get({ sync_enabled: false, migrated_to_sync: false }, function(settings) {
     var syncEnabled = settings.sync_enabled;
+    var migratedToSync = settings.migrated_to_sync;
 
     function getStore(callback) {
         if (syncEnabled) {
-            chrome.storage.sync.get(['followed_items', 'marked_read_urls', 'marked_read_comments', 'hide_marked_urls', 'hide_marked_comments'], function(data) {
-                callback({
-                    followed_items: data.followed_items || {},
-                    marked_read_urls: data.marked_read_urls || {},
-                    marked_read_comments: data.marked_read_comments || {},
-                    hide_marked_urls: data.hide_marked_urls || false,
-                    hide_marked_comments: data.hide_marked_comments || false
-                });
+            chrome.storage.sync.get(['followed_items', 'marked_read_urls', 'marked_read_comments', 'hide_marked_urls', 'hide_marked_comments'], function(syncData) {
+                if (chrome.runtime.lastError) {
+                    console.error("HNMarkAllRead: Error fetching from sync storage:", chrome.runtime.lastError.message);
+                }
+
+                if (!migratedToSync) {
+                    console.log("HNMarkAllRead: First time sync enabled. Merging local data with cloud...");
+                    
+                    // Get local data
+                    var localData = {
+                        followed_items: localStorage['followed_items'] ? JSON.parse(localStorage['followed_items']) : {},
+                        marked_read_urls: localStorage['marked_read_urls'] ? JSON.parse(localStorage['marked_read_urls']) : {},
+                        marked_read_comments: localStorage['marked_read_comments'] ? JSON.parse(localStorage['marked_read_comments']) : {},
+                        hide_marked_urls: localStorage['hide_marked_urls'] === 'true',
+                        hide_marked_comments: localStorage['hide_marked_comments'] === 'true'
+                    };
+
+                    // MERGE LOGIC
+                    var mergedData = {
+                        // URLs and Comments: Simple Union (latest timestamp wins for same key)
+                        marked_read_urls: Object.assign({}, localData.marked_read_urls, syncData.marked_read_urls || {}),
+                        marked_read_comments: Object.assign({}, localData.marked_read_comments, syncData.marked_read_comments || {}),
+                        
+                        // Settings: Sync wins if it exists, otherwise local
+                        hide_marked_urls: (syncData.hide_marked_urls !== undefined) ? syncData.hide_marked_urls : localData.hide_marked_urls,
+                        hide_marked_comments: (syncData.hide_marked_comments !== undefined) ? syncData.hide_marked_comments : localData.hide_marked_comments,
+                        
+                        // Followed items: Merge by ID, take latest timestamp or most comments
+                        followed_items: Object.assign({}, localData.followed_items)
+                    };
+
+                    var cloudFollowed = syncData.followed_items || {};
+                    for (var id in cloudFollowed) {
+                        if (!mergedData.followed_items[id] || cloudFollowed[id].time > mergedData.followed_items[id].time) {
+                            mergedData.followed_items[id] = cloudFollowed[id];
+                        }
+                    }
+
+                    // Save unified data to cloud
+                    chrome.storage.sync.set(mergedData, function() {
+                        if (!chrome.runtime.lastError) {
+                            chrome.storage.local.set({ migrated_to_sync: true });
+                            console.log("HNMarkAllRead: Migration successful.");
+                        } else {
+                            console.error("HNMarkAllRead: Migration failed:", chrome.runtime.lastError.message);
+                        }
+                    });
+
+                    callback(mergedData);
+                } else {
+                    // Already migrated, just use sync data
+                    callback({
+                        followed_items: syncData.followed_items || {},
+                        marked_read_urls: syncData.marked_read_urls || {},
+                        marked_read_comments: syncData.marked_read_comments || {},
+                        hide_marked_urls: syncData.hide_marked_urls === true,
+                        hide_marked_comments: syncData.hide_marked_comments === true
+                    });
+                }
             });
         } else {
+            // Sync not enabled, use local storage as before
             callback({
                 followed_items: localStorage['followed_items'] ? JSON.parse(localStorage['followed_items']) : {},
                 marked_read_urls: localStorage['marked_read_urls'] ? JSON.parse(localStorage['marked_read_urls']) : {},
                 marked_read_comments: localStorage['marked_read_comments'] ? JSON.parse(localStorage['marked_read_comments']) : {},
-                hide_marked_urls: localStorage['hide_marked_urls'] == 'true',
-                hide_marked_comments: localStorage['hide_marked_comments'] == 'true'
+                hide_marked_urls: localStorage['hide_marked_urls'] === 'true',
+                hide_marked_comments: localStorage['hide_marked_comments'] === 'true'
             });
         }
     }
@@ -27,7 +80,18 @@ chrome.storage.local.get({ sync_enabled: false }, function(settings) {
         if (syncEnabled) {
             var data = {};
             data[key] = value;
-            chrome.storage.sync.set(data);
+            
+            // Safety check for 8KB limit
+            var size = JSON.stringify(value).length;
+            if (size > 8000) {
+                console.warn("HNMarkAllRead: Quota warning for '" + key + "': " + size + " bytes.");
+            }
+
+            chrome.storage.sync.set(data, function() {
+                if (chrome.runtime.lastError) {
+                    console.error("HNMarkAllRead: Sync save failed:", chrome.runtime.lastError.message);
+                }
+            });
         } else {
             localStorage[key] = typeof value === 'string' ? value : JSON.stringify(value);
         }
@@ -128,7 +192,7 @@ chrome.storage.local.get({ sync_enabled: false }, function(settings) {
 
                 $("#hide_read_items").click(function() {
                     hide_marked_urls = $("#hide_read_items").prop("checked");
-                    saveStore('hide_marked_urls', hide_marked_urls ? 'true' : 'false');
+                    saveStore('hide_marked_urls', syncEnabled ? hide_marked_urls : (hide_marked_urls ? 'true' : 'false'));
                     location.reload();
                 });
             }
@@ -277,7 +341,7 @@ chrome.storage.local.get({ sync_enabled: false }, function(settings) {
 
             $("#hide_read_items").click(function() {
                 hide_marked_comments = $("#hide_read_items").prop("checked");
-                saveStore('hide_marked_comments', hide_marked_comments ? 'true' : 'false');
+                saveStore('hide_marked_comments', syncEnabled ? hide_marked_comments : (hide_marked_comments ? 'true' : 'false'));
                 hideMarkedComments(hide_marked_comments);
             });
 
