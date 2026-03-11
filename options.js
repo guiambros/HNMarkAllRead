@@ -62,12 +62,14 @@ function reset_data() {
   resetButton.style.backgroundColor = "";
   const checkbox = document.getElementById('sync-enabled');
   checkbox.onchange = null; 
+  
+  // Clear everything
   chrome.storage.sync.clear(() => {
     chrome.storage.local.clear(() => {
       localStorage.clear();
       checkbox.checked = false;
       checkbox.onchange = save_options;
-      show_status("Data cleared successfully!");
+      show_status("All data cleared successfully!");
       update_debug_info();
     });
   });
@@ -78,13 +80,15 @@ function force_pull() {
   btn.innerText = "Syncing...";
   btn.disabled = true;
   
-  // Setting migrated_to_sync to false forces script.js to re-merge next time any HN page is loaded
-  chrome.storage.local.set({ migrated_to_sync: false }, () => {
-    show_status("Re-sync triggered! Refresh any HN tab.");
+  // Wipe the local "migrated" flag AND the local cache to force a clean pull from cloud
+  chrome.storage.local.remove(['migrated_to_sync', 'marked_read_urls', 'followed_items'], () => {
+    show_status("Local cache cleared. Refreshing from cloud...");
     setTimeout(() => {
       btn.innerText = "Force Sync from Cloud";
       btn.disabled = false;
       update_debug_info();
+      // Inform the user to refresh HN
+      alert("Local cache cleared. Please refresh your Hacker News tabs to pull fresh data from the cloud.");
     }, 1000);
   });
 }
