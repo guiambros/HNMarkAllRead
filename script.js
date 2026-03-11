@@ -2,83 +2,55 @@ chrome.storage.local.get({ sync_enabled: false, migrated_to_sync: false }, funct
     var syncEnabled = settings.sync_enabled;
     var migratedToSync = settings.migrated_to_sync;
 
-    // Helper to compress URLs into IDs where possible
-    function getUrlKey(url) {
-        if (!url) return url;
+    function getHnIdFromUrl(url) {
+        if (!url) return null;
         var match = url.match(/item\?id=([0-9]+)/);
-        if (match) return "hn:" + match[1];
-        return url;
+        return match ? match[1] : null;
+    }
+
+    function cleanObject(obj) {
+        var cleaned = {};
+        for (var key in obj) {
+            var id = key.indexOf('http') === 0 ? getHnIdFromUrl(key) : key.replace('hn:', '');
+            if (id && /^[0-9]+$/.test(id)) {
+                cleaned[id] = obj[key];
+            }
+        }
+        return cleaned;
     }
 
     function getStore(callback) {
         if (syncEnabled) {
             chrome.storage.sync.get(['followed_items', 'marked_read_urls', 'marked_read_comments', 'hide_marked_urls', 'hide_marked_comments'], function(syncData) {
-                if (chrome.runtime.lastError) {
-                    console.error("HNMarkAllRead: Error fetching from sync storage:", chrome.runtime.lastError.message);
-                }
+                var store = {
+                    followed_items: syncData.followed_items || {},
+                    marked_read_urls: cleanObject(syncData.marked_read_urls || {}),
+                    marked_read_comments: syncData.marked_read_comments || {},
+                    hide_marked_urls: syncData.hide_marked_urls === true,
+                    hide_marked_comments: syncData.hide_marked_comments === true
+                };
 
                 if (!migratedToSync) {
-                    console.log("HNMarkAllRead: First time sync enabled. Merging and optimizing local data...");
-                    
-                    var localData = {
-                        followed_items: localStorage['followed_items'] ? JSON.parse(localStorage['followed_items']) : {},
-                        marked_read_urls: localStorage['marked_read_urls'] ? JSON.parse(localStorage['marked_read_urls']) : {},
-                        marked_read_comments: localStorage['marked_read_comments'] ? JSON.parse(localStorage['marked_read_comments']) : {},
-                        hide_marked_urls: localStorage['hide_marked_urls'] === 'true',
-                        hide_marked_comments: localStorage['hide_marked_comments'] === 'true'
-                    };
-
-                    // Optimize existing local URL keys to ID keys during migration
-                    var optimizedLocalUrls = {};
-                    for (var url in localData.marked_read_urls) {
-                        optimizedLocalUrls[getUrlKey(url)] = localData.marked_read_urls[url];
-                    }
-
+                    var localUrls = localStorage['marked_read_urls'] ? JSON.parse(localStorage['marked_read_urls']) : {};
                     var mergedData = {
-                        marked_read_urls: Object.assign({}, optimizedLocalUrls, syncData.marked_read_urls || {}),
-                        marked_read_comments: Object.assign({}, localData.marked_read_comments, syncData.marked_read_comments || {}),
-                        hide_marked_urls: (syncData.hide_marked_urls !== undefined) ? syncData.hide_marked_urls : localData.hide_marked_urls,
-                        hide_marked_comments: (syncData.hide_marked_comments !== undefined) ? syncData.hide_marked_comments : localData.hide_marked_comments,
-                        followed_items: Object.assign({}, localData.followed_items)
+                        marked_read_urls: Object.assign({}, cleanObject(localUrls), store.marked_read_urls),
+                        marked_read_comments: Object.assign({}, (localStorage['marked_read_comments'] ? JSON.parse(localStorage['marked_read_comments']) : {}), store.marked_read_comments),
+                        hide_marked_urls: (syncData.hide_marked_urls !== undefined) ? syncData.hide_marked_urls : (localStorage['hide_marked_urls'] === 'true'),
+                        hide_marked_comments: (syncData.hide_marked_comments !== undefined) ? syncData.hide_marked_comments : (localStorage['hide_marked_comments'] === 'true'),
+                        followed_items: localStorage['followed_items'] ? JSON.parse(localStorage['followed_items']) : store.followed_items
                     };
-
-                    var cloudFollowed = syncData.followed_items || {};
-                    for (var id in cloudFollowed) {
-                        if (!mergedData.followed_items[id] || cloudFollowed[id].time > mergedData.followed_items[id].time) {
-                            mergedData.followed_items[id] = cloudFollowed[id];
-                        }
-                    }
-
                     chrome.storage.sync.set(mergedData, function() {
-                        if (!chrome.runtime.lastError) {
-                            chrome.storage.local.set({ migrated_to_sync: true });
-                            console.log("HNMarkAllRead: Migration and optimization successful.");
-                        } else {
-                            console.error("HNMarkAllRead: Migration failed (still too much data?):", chrome.runtime.lastError.message);
-                        }
+                        chrome.storage.local.set({ migrated_to_sync: true });
                     });
-
                     callback(mergedData);
                 } else {
-                    callback({
-                        followed_items: syncData.followed_items || {},
-                        marked_read_urls: syncData.marked_read_urls || {},
-                        marked_read_comments: syncData.marked_read_comments || {},
-                        hide_marked_urls: syncData.hide_marked_urls === true,
-                        hide_marked_comments: syncData.hide_marked_comments === true
-                    });
+                    callback(store);
                 }
             });
         } else {
-            // Check if settings are missing (likely reset) and clear localStorage accordingly
-            if (!migratedToSync && localStorage['marked_read_urls']) {
-                console.log("HNMarkAllRead: No settings found, clearing legacy local storage.");
-                localStorage.clear();
-            }
-
             callback({
                 followed_items: localStorage['followed_items'] ? JSON.parse(localStorage['followed_items']) : {},
-                marked_read_urls: localStorage['marked_read_urls'] ? JSON.parse(localStorage['marked_read_urls']) : {},
+                marked_read_urls: cleanObject(localStorage['marked_read_urls'] ? JSON.parse(localStorage['marked_read_urls']) : {}),
                 marked_read_comments: localStorage['marked_read_comments'] ? JSON.parse(localStorage['marked_read_comments']) : {},
                 hide_marked_urls: localStorage['hide_marked_urls'] === 'true',
                 hide_marked_comments: localStorage['hide_marked_comments'] === 'true'
@@ -90,11 +62,7 @@ chrome.storage.local.get({ sync_enabled: false, migrated_to_sync: false }, funct
         if (syncEnabled) {
             var data = {};
             data[key] = value;
-            chrome.storage.sync.set(data, function() {
-                if (chrome.runtime.lastError) {
-                    console.error("HNMarkAllRead: Sync save failed:", chrome.runtime.lastError.message);
-                }
-            });
+            chrome.storage.sync.set(data);
         } else {
             localStorage[key] = typeof value === 'string' ? value : JSON.stringify(value);
         }
@@ -110,29 +78,14 @@ chrome.storage.local.get({ sync_enabled: false, migrated_to_sync: false }, funct
         var now = (new Date()).getTime();
         var four_days = 345600000;
 
-        // cleanup
+        // Auto-cleanup
         var changed = false;
-        for (var item_id in followed_items) {
-            if (now - followed_items[item_id].time > four_days) {
-                delete followed_items[item_id];
-                changed = true;
-            }
+        for (var id in marked_read_urls) {
+            if (now - marked_read_urls[id] > four_days) { delete marked_read_urls[id]; changed = true; }
         }
-        if (changed) saveStore('followed_items', followed_items);
+        if (changed) saveStore('marked_read_urls', marked_read_urls);
 
         if (!window.location.href.match(/\/item\?/)) { // listings page
-            var changed_urls = false;
-            for (var urlKey in marked_read_urls) {
-                if (now - marked_read_urls[urlKey] > four_days) {
-                    delete marked_read_urls[urlKey];
-                    changed_urls = true;
-                }
-            }
-            if (changed_urls) saveStore('marked_read_urls', marked_read_urls);
-
-            var titles = 0;
-            var more_td = null;
-
             function hideShowRow(mainlink) {
                 var titleRow = mainlink.closest("tr");
                 if (hide_marked_urls && !mainlink.data("following")) {
@@ -142,52 +95,52 @@ chrome.storage.local.get({ sync_enabled: false, migrated_to_sync: false }, funct
             }
 
             $(".subtext").each(function(i,sub) {
-                var mainlink = $(".title a", $(sub).parent().prev()).first()
-                titles++;
+                var storyRow = $(sub).closest('tr').prev();
+                var storyId = storyRow.attr("id");
+                var mainlink = storyRow.find(".titleline a").first();
+                if (!mainlink.length) mainlink = storyRow.find(".title a").first(); // Fallback for old HN layout
+                
                 var following = false;
                 var comments_a = sub.childNodes[9];
-
-                if (comments_a) {
+                if (comments_a && comments_a.tagName === 'A') {
                     var item_id = comments_a.href.match(/[0-9]+/)[0];
                     var comments = comments_a.innerText.match(/[0-9]+/) ? comments_a.innerText.match(/[0-9]+/)[0]*1 : 0;
                     if (followed_items[item_id]) {
                         following = true;
                         mainlink.css({color: "#7070b0"});
                         var unread_comments = comments - followed_items[item_id].read_comments;
-                        if (unread_comments > 0) {
-                            $(comments_a).text("unread comments: "+unread_comments+"/"+comments).css({color: "green"});
-                        }
+                        if (unread_comments > 0) $(comments_a).text("unread comments: "+unread_comments+"/"+comments).css({color: "green"});
                         mainlink.data("following", true);
                     }
                 }
 
-                // Check using optimized key
-                if (marked_read_urls[getUrlKey(mainlink.attr("href"))] && !following) {
+                if (storyId && marked_read_urls[storyId] && !following) {
                     mainlink.css({color: "#828282"});
                     hideShowRow(mainlink);
                 }
             });
 
-            more_td = $(".title").last();
-            if (more_td.text().trim() != "More") more_td = null;
-
-            if (titles > 0) {
+            if ($(".subtext").length > 0) {
                 $($(".pagetop")[0]).append("&nbsp; <span class='mark_all_read' title='Mark all read'><a href='javascript:void(0);'><img src='"+chrome.runtime.getURL("/images/HNMarkAllRead-18.png")+"'></img></a></span>"+
                     "<span id='hide_span' class='hide_news_span'><input type='checkbox' id='hide_read_items' /><label for='hide_read_items'>Hide read</label></span>");
                 if (hide_marked_urls) $("#hide_read_items").prop("checked", true);
 
-                if (more_td) {
+                var more_td = $(".title").last();
+                if (more_td.text().trim() == "More") {
                     more_td.append("&nbsp; <span class='mark_all_read near_more' title='Mark all read'><a href='javascript:void(0);'><img src='"+chrome.runtime.getURL("/images/HNMarkAllRead-18.png")+"'></img></a></span>");
                 } else {
-                    $(".subtext").last().parent().after("<tr><td colspan='2'></td><td class='mark_all_read_footer'><span class='mark_all_read near_more' title='Mark all read'><a href='javascript:void(0);'><img src='"+chrome.runtime.getURL("/images/HNMarkAllRead-18.png")+"'></img></a></span></td></tr>");
+                    $(".subtext").last().closest('tr').after("<tr><td colspan='2'></td><td class='mark_all_read_footer'><span class='mark_all_read near_more' title='Mark all read'><a href='javascript:void(0);'><img src='"+chrome.runtime.getURL("/images/HNMarkAllRead-18.png")+"'></img></a></span></td></tr>");
                 }
 
                 $(".mark_all_read").click(function () {
                     $(".subtext").each(function(i,sub) {
-                        var mainlink = $(".title a", $(sub).parent().prev()).first()
-                        var urlKey = getUrlKey(mainlink.attr("href"));
-                        if (!marked_read_urls[urlKey]) {
-                            marked_read_urls[urlKey] = (new Date()).getTime();
+                        var storyRow = $(sub).closest('tr').prev();
+                        var storyId = storyRow.attr("id");
+                        var mainlink = storyRow.find(".titleline a").first();
+                        if (!mainlink.length) mainlink = storyRow.find(".title a").first();
+                        
+                        if (storyId && !marked_read_urls[storyId]) {
+                            marked_read_urls[storyId] = (new Date()).getTime();
                             mainlink.css({color: "#828282"});
                             hideShowRow(mainlink);
                         }
@@ -203,19 +156,14 @@ chrome.storage.local.get({ sync_enabled: false, migrated_to_sync: false }, funct
             }
         } else { // comments page
             var item_id = window.location.href.match(/[0-9]+/)[0];
-            var changed_comments = false;
-            for (var comment in marked_read_comments) {
-                if (now - marked_read_comments[comment] > four_days) {
-                    delete marked_read_comments[comment];
-                    changed_comments = true;
-                }
+            if (!marked_read_urls[item_id]) {
+                marked_read_urls[item_id] = (new Date()).getTime();
+                saveStore('marked_read_urls', marked_read_urls);
             }
-            if (changed_comments) saveStore('marked_read_comments', marked_read_comments);
 
             var parents = [];
             var last_depth = 0;
             var last_node = null;
-            var first_child = false;
             var comments_unread = 0;
             var comments_total = 0;
             var collapsible_parents = {};
@@ -250,27 +198,22 @@ chrome.storage.local.get({ sync_enabled: false, migrated_to_sync: false }, funct
                     $(node).data("comment_id", comment_id).addClass("comment_td_"+comment_id);
 
                     if (marked_read_comments[comment_id]) {
-                        $(tr).addClass("read_comment_tr");
-                        $(node).addClass("read_comment_td");
+                        $(tr).addClass("read_comment_tr"); $(node).addClass("read_comment_td");
                     } else {
-                        $(tr).addClass("unread_comment_tr");
-                        $(node).addClass("unread_comment_td");
+                        $(tr).addClass("unread_comment_tr"); $(node).addClass("unread_comment_td");
                         comments_unread++;
                     }
 
                     var depth = indentation/40;
                     if (depth > last_depth) {
                         parents.push(last_node);
-                        first_child = true;
-                    } else {
-                        first_child = false;
-                        if (depth < last_depth) {
-                            for (var j=0;j<last_depth-depth;j++) parents.pop();
-                        }
+                    } else if (depth < last_depth) {
+                        for (var j=0;j<last_depth-depth;j++) parents.pop();
                     }
 
                     if (parents.length > 0) {
                         var parent = parents[parents.length-1];
+                        var first_child = (depth > last_depth);
                         $("<span"+(first_child ? " class='showparent_firstchild'" : "")+"> | <span class='showparent'>show parent</span></span>").
                             appendTo($(node).find('span.comhead').get(0)).
                             children(".showparent").
@@ -279,10 +222,7 @@ chrome.storage.local.get({ sync_enabled: false, migrated_to_sync: false }, funct
                                     $("#parent_tr").append($(p).clone());
                                     $(n).css({position: "relative"}).append($("#parent_div").show());
                                 }})(parent, node),
-                                function() {
-                                    $("#parent_tr").html("");
-                                    $("#parent_div").hide();
-                                }
+                                function() { $("#parent_tr").html(""); $("#parent_div").hide(); }
                             );
                     }
 
@@ -293,7 +233,7 @@ chrome.storage.local.get({ sync_enabled: false, migrated_to_sync: false }, funct
                     }
                     last_node = node;
                     last_depth = depth;
-                } catch(e) { console.log(e); }
+                } catch(e) { console.error(e); }
             });
 
             $(".mark_all_read").click(function(){
@@ -305,10 +245,8 @@ chrome.storage.local.get({ sync_enabled: false, migrated_to_sync: false }, funct
                     $(".comment_tr_"+cid).removeClass("unread_comment_tr").addClass("read_comment_tr");
                 });
                 comments_unread = 0;
-                if (followed_items[item_id]) {
-                    followed_items[item_id].read_comments = comments_total;
-                    saveStore('followed_items', followed_items);
-                }
+                if (followed_items[item_id]) followed_items[item_id].read_comments = comments_total;
+                saveStore('followed_items', followed_items);
                 saveStore('marked_read_comments', marked_read_comments);
                 comments_counter.text("unread comments: 0/"+comments_total);
             });
@@ -317,10 +255,7 @@ chrome.storage.local.get({ sync_enabled: false, migrated_to_sync: false }, funct
 
             $("#follow_item").click(function(){
                 if ($("#follow_item").prop("checked")) {
-                    followed_items[item_id] = {
-                        time: (new Date()).getTime(),
-                        read_comments: comments_total - comments_unread
-                    };
+                    followed_items[item_id] = { time: (new Date()).getTime(), read_comments: comments_total - comments_unread };
                 } else {
                     delete followed_items[item_id];
                 }
@@ -328,8 +263,7 @@ chrome.storage.local.get({ sync_enabled: false, migrated_to_sync: false }, funct
             });
 
             if (hide_marked_comments) {
-                $("#hide_read_items").prop("checked", true);
-                hideMarkedComments(true);
+                $("#hide_read_items").prop("checked", true); hideMarkedComments(true);
             } else {
                 hideMarkedComments(false);
             }
@@ -388,6 +322,13 @@ chrome.storage.local.get({ sync_enabled: false, migrated_to_sync: false }, funct
                     if (sheet.cssRules[i].selectorText == selector) { sheet.deleteRule(i); }
                 }
             }
+        }
+    });
+
+    chrome.storage.onChanged.addListener(function(changes, area) {
+        if (changes.migrated_to_sync && changes.migrated_to_sync.newValue === undefined) {
+            localStorage.clear();
+            location.reload();
         }
     });
 });
