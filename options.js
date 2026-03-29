@@ -9,8 +9,10 @@ const connectBtn = document.getElementById('connect-btn');
 const syncNowBtn = document.getElementById('sync-now-btn');
 const disconnectBtn = document.getElementById('disconnect-btn');
 const syncInfo = document.getElementById('sync-info');
+const deleteRemoteBtn = document.getElementById('delete-remote-btn');
 const showCacheBtn = document.getElementById('show-cache-btn');
 const hideCacheBtn = document.getElementById('hide-cache-btn');
+const deleteLocalBtn = document.getElementById('delete-local-btn');
 const debugOutput = document.getElementById('debug-output');
 const statUrls = document.getElementById('stat-urls');
 const statComments = document.getElementById('stat-comments');
@@ -31,6 +33,7 @@ async function updateUI() {
       connectBtn.style.display = 'none';
       syncNowBtn.style.display = 'inline-block';
       disconnectBtn.style.display = 'inline-block';
+      deleteRemoteBtn.style.display = 'inline-block';
 
       // Show last sync time
       if (status.lastSyncTime > 0) {
@@ -45,6 +48,7 @@ async function updateUI() {
       connectBtn.style.display = 'inline-block';
       syncNowBtn.style.display = 'none';
       disconnectBtn.style.display = 'none';
+      deleteRemoteBtn.style.display = 'none';
       syncInfo.textContent = 'Connect to sync your data across devices';
     }
 
@@ -182,12 +186,72 @@ function hideCache() {
   hideCacheBtn.style.display = 'none';
 }
 
+/**
+ * Delete local cache data
+ */
+async function deleteLocalData() {
+  if (!confirm('Are you sure you want to delete all local data? This will clear all your read URLs, comments, and followed items from this device.')) {
+    return;
+  }
+
+  deleteLocalBtn.disabled = true;
+  deleteLocalBtn.textContent = 'Deleting...';
+
+  try {
+    const result = await chrome.runtime.sendMessage({ action: 'deleteLocalData' });
+
+    if (result.success) {
+      alert('Local data deleted successfully.');
+      await updateUI();
+      // Hide cache output if visible
+      hideCache();
+    } else {
+      alert('Failed to delete local data: ' + (result.error || 'Unknown error'));
+    }
+  } catch (error) {
+    alert('Failed to delete local data: ' + error.message);
+  } finally {
+    deleteLocalBtn.disabled = false;
+    deleteLocalBtn.textContent = 'Delete Local Data';
+  }
+}
+
+/**
+ * Delete remote data from Google Drive
+ */
+async function deleteRemoteData() {
+  if (!confirm('Are you sure you want to delete your sync data from Google Drive? This will remove the sync file from your Google Drive. Local data will be preserved.')) {
+    return;
+  }
+
+  deleteRemoteBtn.disabled = true;
+  deleteRemoteBtn.textContent = 'Deleting...';
+
+  try {
+    const result = await chrome.runtime.sendMessage({ action: 'deleteRemoteData' });
+
+    if (result.success) {
+      alert('Remote data deleted successfully.');
+      await updateUI();
+    } else {
+      alert('Failed to delete remote data: ' + (result.error || 'Unknown error'));
+    }
+  } catch (error) {
+    alert('Failed to delete remote data: ' + error.message);
+  } finally {
+    deleteRemoteBtn.disabled = false;
+    deleteRemoteBtn.textContent = 'Delete Remote Data';
+  }
+}
+
 // Event listeners
 connectBtn.addEventListener('click', connect);
 syncNowBtn.addEventListener('click', syncNow);
 disconnectBtn.addEventListener('click', disconnect);
+deleteRemoteBtn.addEventListener('click', deleteRemoteData);
 showCacheBtn.addEventListener('click', showCache);
 hideCacheBtn.addEventListener('click', hideCache);
+deleteLocalBtn.addEventListener('click', deleteLocalData);
 
 // Initialize
 updateUI();

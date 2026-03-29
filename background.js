@@ -365,6 +365,53 @@ async function signOut() {
 }
 
 /**
+ * Delete remote sync file from Google Drive
+ */
+async function deleteRemoteData() {
+  try {
+    // Find the sync file
+    const fileInfo = await findSyncFile();
+
+    if (!fileInfo) {
+      return { success: true, message: 'No remote data found' };
+    }
+
+    // Delete the file
+    const response = await driveRequest(
+      `${DRIVE_API_BASE}/files/${fileInfo.id}`,
+      { method: 'DELETE' }
+    );
+
+    if (!response.ok && response.status !== 204) {
+      throw new Error(`Failed to delete file: ${response.status}`);
+    }
+
+    syncState.fileId = null;
+
+    return { success: true };
+  } catch (error) {
+    console.error('Delete remote data failed:', error);
+    return { success: false, error: error.message };
+  }
+}
+
+/**
+ * Delete all local data
+ */
+async function deleteLocalData() {
+  try {
+    await new Promise((resolve) => {
+      chrome.storage.local.clear(resolve);
+    });
+
+    return { success: true };
+  } catch (error) {
+    console.error('Delete local data failed:', error);
+    return { success: false, error: error.message };
+  }
+}
+
+/**
  * Get current sync status
  */
 function getSyncStatus() {
@@ -403,6 +450,12 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       case 'setLocalData':
         await setLocalData(message.data);
         return { success: true };
+
+      case 'deleteLocalData':
+        return deleteLocalData();
+
+      case 'deleteRemoteData':
+        return deleteRemoteData();
 
       default:
         return { success: false, error: 'Unknown action' };
