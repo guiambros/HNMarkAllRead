@@ -1,11 +1,27 @@
 {
   "name": "Hacker News: Mark All Read",
-  "version": "1.63",
+  "version": "1.64",
   "manifest_version": 3,
   "description": "Save time on HN by marking read the titles and comments you already scanned. And more.",
+  "key": "MIICIjANBgkqhkiG9w0BAQEFAAOCAg8AMIICCgKCAgEAsVfAi2mTiXIyhcSSlPH3EoknPUSHqPntSjecqUe0vNNY+h50RR5IOTSSY453LKdX8TYxSiRtOWBZBpPHqf0c3hox4OmggkDDRtFWrDdChMviVEL174NLD11bsm+y7YjRtm1y+oodVcKVAl7gJ6r90o3k89anFsfuB4m2KySG38KDsCPUiIJdy2R02b9ljBo0MlEJAXyXRqQQW1lomCPYYV5pPHzPMeVl9/UOeyj6psTqRl6LzMa3AMy2kdCsPB7ZLpcUKmfpoP41hz3NlsLhMucoq3Z0HvnRpdPMfPRktPo8BPEV7pyyGb/kikDHF+ahgChpEAFP8C2dEDMIefYSWmYTokHNqA9p595L1LygY/mj5IWlowPYl6ybgNdWfGa/UtQuOTLHB6oK0ZMPE87bXtLD0DLrs5/h0NQvuvVlX2EaVDXQkhHjWj95OM0ddJc9wHcNS0PP0zst5uyFvx9F1jdUtbMysA4rpX2l+pU/nTe6VE440kE1ZE98Cap6vm1PI10QbeFGBMjEsE0iaJ9z5Xb3prGG67yhlwz2Rwdq/Ru6/mCq78lFUmUYDT/x/FhF2WxlvtKe9lbqdPR5DYCZRN8rbtnLh3pItiJ5nnx+E+S4trIBgsTai30mOMtFu1W0L7/WPiD62kYxuZMzNi6niscPdWVjlDKgaHEKUsUWLIUCAwEAAQ==",
+  "permissions": [
+    "identity",
+    "storage",
+    "alarms"
+  ],
   "host_permissions": [
     "https://news.ycombinator.com/*"
   ],
+  "oauth2": {
+    "client_id": "467242308712-veejfintknjdbgtrmeom3b6gfim9kjbf.apps.googleusercontent.com",
+    "scopes": [
+      "https://www.googleapis.com/auth/drive.appdata"
+    ]
+  },
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
   "content_scripts": [
     {
       "matches": [
@@ -13,6 +29,7 @@
       ],
       "js": [
         "jquery.min.js",
+        "storageManager.js",
         "script.js"
       ],
       "css": [
@@ -34,5 +51,6 @@
   ],
   "icons": {
     "128": "images/HNMarkAllRead.png"
-  }
+  },
+  "options_page": "options.html"
 }

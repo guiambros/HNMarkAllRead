@@ -1,34 +1,14 @@
-if (localStorage['followed_items']) {
-    // cleanup
-    followed_items = JSON.parse(localStorage['followed_items']);
-    var now = (new Date()).getTime();
+// Use StorageManager for all storage operations (supports Google Drive sync)
+// StorageManager is loaded before this script and auto-initializes
 
-    // delete items older than 4 days
-    for (var item_id in followed_items) {
-        if (now - followed_items[item_id].time > 345600000) delete followed_items[item_id];
-    }
-} else {
-    followed_items = {};
-}
+// Wait for StorageManager to be ready, then run main logic
+StorageManager.ready().then(function() {
+    // Get followed items from cache
+    var followed_items = StorageManager.getFollowedItems();
 
-localStorage['followed_items'] = JSON.stringify(followed_items);
-
-if (!window.location.href.match(/\/item\?/)) { // ignore if displaying a news item
-    // initial setup
-    if (localStorage['marked_read_urls']) {
-        // cleanup
-        marked_read_urls = JSON.parse(localStorage['marked_read_urls']);
-        var now = (new Date()).getTime();
-
-        // delete urls older than 4 days
-        for (var url in marked_read_urls) {
-            if (now - marked_read_urls[url] > 345600000) delete marked_read_urls[url];
-        }
-    } else {
-        marked_read_urls = {};
-    }
-
-    localStorage['marked_read_urls'] = JSON.stringify(marked_read_urls);
+    if (!window.location.href.match(/\/item\?/)) { // ignore if displaying a news item
+    // Get marked read URLs from cache
+    var marked_read_urls = StorageManager.getMarkedReadUrls();
 
     var titles = 0;
     var titles_marked = 0;
@@ -37,7 +17,7 @@ if (!window.location.href.match(/\/item\?/)) { // ignore if displaying a news it
     // hide or show the row depending on "hide read" status
     function hideShowRow(mainlink) {
         var titleRow = mainlink.closest("tr");
-        if (localStorage["hide_marked_urls"] == 'true' && !mainlink.data("following")) {
+        if (StorageManager.getHideMarkedUrls() && !mainlink.data("following")) {
             var last = titleRow.hide().next().hide().next();
             if (!last.children("a")[0]) last.hide();
         } else titleRow.show().next().show().next().show();
@@ -87,7 +67,7 @@ if (!window.location.href.match(/\/item\?/)) { // ignore if displaying a news it
     if (titles > 0) {
         $($(".pagetop")[0]).append("&nbsp; <span class='mark_all_read' title='Mark all read'><a href='javascript:void(0);'><img src='"+chrome.runtime.getURL("/images/HNMarkAllRead-18.png")+"'></img></a></span>"+
             "<span id='hide_span' class='hide_news_span'><input type='checkbox' id='hide_read_items' /><label for='hide_read_items'>Hide read</label></span>");
-        if (localStorage["hide_marked_urls"] == 'true') $("#hide_read_items").prop("checked", true);
+        if (StorageManager.getHideMarkedUrls()) $("#hide_read_items").prop("checked", true);
 
         if (more_td) {
             more_td.append("&nbsp; <span class='mark_all_read near_more' title='Mark all read'><a href='javascript:void(0);'><img src='"+chrome.runtime.getURL("/images/HNMarkAllRead-18.png")+"'></img></a></span>");
@@ -104,37 +84,23 @@ if (!window.location.href.match(/\/item\?/)) { // ignore if displaying a news it
                 if (!marked_read_urls[mainlink.attr("href")]) {
                     // add the url to the read ones
                     marked_read_urls[mainlink.attr("href")] = (new Date()).getTime();
+                    StorageManager.markUrlAsRead(mainlink.attr("href"));
 
                     // give the "read" color
                     mainlink.css({color: "#828282"});
                     hideShowRow(mainlink);
                 }
             });
-
-            localStorage['marked_read_urls'] = JSON.stringify(marked_read_urls);
         });
 
         $("#hide_read_items").click(function() {
-            localStorage["hide_marked_urls"] = $("#hide_read_items").prop("checked");
+            StorageManager.setHideMarkedUrls($("#hide_read_items").prop("checked"));
             location.reload();
         });
     }
 } else { // comments page
-    // initial setup for read comments
-    if (localStorage['marked_read_comments']) {
-        // cleanup
-        marked_read_comments = JSON.parse(localStorage['marked_read_comments']);
-        var now = (new Date()).getTime();
-
-        // delete data older than 4 days
-        for (var comment in marked_read_comments) {
-            if (now - marked_read_comments[comment] > 345600000) delete marked_read_comments[comment];
-        }
-    } else {
-        marked_read_comments = {};
-    }
-
-    localStorage['marked_read_comments'] = JSON.stringify(marked_read_comments);
+    // Get marked read comments from cache
+    var marked_read_comments = StorageManager.getMarkedReadComments();
 
     // comments traversing
     var ii = $("img");
@@ -243,29 +209,35 @@ if (!window.location.href.match(/\/item\?/)) { // ignore if displaying a news it
         }
     );
 
+    // Item ID for following
+    var item_id = window.location.href.match(/[0-9]+/)[0];
+
     $(".mark_all_read").click(function(){
+        var commentIds = [];
         $(".unread_comment_td").each(function(i,el) {
             var sel = $(el);
             var comment_id = sel.data("comment_id");
             marked_read_comments[comment_id] = (new Date()).getTime();
+            commentIds.push(comment_id);
             sel.removeClass("unread_comment_td").addClass("read_comment_td");
             var tr = $(".comment_tr_"+comment_id)
             tr.removeClass("unread_comment_tr").addClass("read_comment_tr");
             comments_unread = 0;
             if (followed_items[item_id]) {
                 followed_items[item_id].read_comments = comments_total;
-
-                localStorage['followed_items'] = JSON.stringify(followed_items);
+                StorageManager.updateFollowedItemComments(item_id, comments_total);
             }
         });
 
-        localStorage['marked_read_comments'] = JSON.stringify(marked_read_comments);
+        // Batch update storage
+        if (commentIds.length > 0) {
+            StorageManager.markCommentsAsRead(commentIds);
+        }
         comments_counter.text("unread comments: 0/"+comments_total);
     });
 
     /////////////////////////////////
     // following this item
-    var item_id = window.location.href.match(/[0-9]+/)[0];
     if (followed_items[item_id]) {
         $("#follow_item").prop("checked", true);
     }
@@ -276,16 +248,16 @@ if (!window.location.href.match(/\/item\?/)) { // ignore if displaying a news it
                 time: (new Date()).getTime(),
                 read_comments: comments_total - comments_unread
             };
+            StorageManager.followItem(item_id, comments_total - comments_unread);
         } else {
             delete followed_items[item_id];
+            StorageManager.unfollowItem(item_id);
         }
-
-        localStorage['followed_items'] = JSON.stringify(followed_items);
     });
 
     /////////////////////////////////
     // hiding marked comments
-    if (localStorage["hide_marked_comments"] == 'true') {
+    if (StorageManager.getHideMarkedComments()) {
         $("#hide_read_items").prop("checked", true);
         hideMarkedComments(true);
     } else {
@@ -303,8 +275,7 @@ if (!window.location.href.match(/\/item\?/)) { // ignore if displaying a news it
     }
 
     $("#hide_read_items").click(function() {
-        localStorage["hide_marked_comments"] = $("#hide_read_items").prop("checked");
-
+        StorageManager.setHideMarkedComments($("#hide_read_items").prop("checked"));
         hideMarkedComments($("#hide_read_items").prop("checked"));
     });
 
@@ -368,3 +339,4 @@ if (!window.location.href.match(/\/item\?/)) { // ignore if displaying a news it
         }
     }
 }
+}); // end StorageManager.ready()

@@ -86,3 +86,19 @@
 #post_comments_tr {
     padding-left: 10px;
 }
+
+.sync_span {
+    font-size: 10px;
+    vertical-align: middle;
+    margin-left: 10px;
+}
+
+.sync_span a {
+    color: #828282;
+    text-decoration: none;
+}
+
+.sync_span a:hover {
+    color: #ff6600;
+    text-decoration: underline;
+}
