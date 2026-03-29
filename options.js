@@ -13,7 +13,9 @@ const deleteRemoteBtn = document.getElementById('delete-remote-btn');
 const showCacheBtn = document.getElementById('show-cache-btn');
 const hideCacheBtn = document.getElementById('hide-cache-btn');
 const deleteLocalBtn = document.getElementById('delete-local-btn');
+const debugContainer = document.getElementById('debug-container');
 const debugOutput = document.getElementById('debug-output');
+const copyCacheBtn = document.getElementById('copy-cache-btn');
 const statUrls = document.getElementById('stat-urls');
 const statComments = document.getElementById('stat-comments');
 const statFollowed = document.getElementById('stat-followed');
@@ -170,12 +172,12 @@ async function showCache() {
     // Format the data nicely
     const formatted = JSON.stringify(data, null, 2);
     debugOutput.textContent = formatted;
-    debugOutput.classList.add('visible');
+    debugContainer.classList.add('visible');
     showCacheBtn.style.display = 'none';
     hideCacheBtn.style.display = 'inline-block';
   } catch (error) {
     debugOutput.textContent = 'Error loading cache: ' + error.message;
-    debugOutput.classList.add('visible');
+    debugContainer.classList.add('visible');
   }
 }
 
@@ -183,9 +185,26 @@ async function showCache() {
  * Hide cache data
  */
 function hideCache() {
-  debugOutput.classList.remove('visible');
+  debugContainer.classList.remove('visible');
   showCacheBtn.style.display = 'inline-block';
   hideCacheBtn.style.display = 'none';
+}
+
+/**
+ * Copy cache data to clipboard
+ */
+async function copyCache() {
+  try {
+    await navigator.clipboard.writeText(debugOutput.textContent);
+    copyCacheBtn.textContent = 'Copied!';
+    copyCacheBtn.classList.add('copied');
+    setTimeout(() => {
+      copyCacheBtn.textContent = 'Copy';
+      copyCacheBtn.classList.remove('copied');
+    }, 2000);
+  } catch (error) {
+    console.error('Failed to copy:', error);
+  }
 }
 
 /**
@@ -290,6 +309,7 @@ disconnectBtn.addEventListener('click', disconnect);
 deleteRemoteBtn.addEventListener('click', deleteRemoteData);
 showCacheBtn.addEventListener('click', showCache);
 hideCacheBtn.addEventListener('click', hideCache);
+copyCacheBtn.addEventListener('click', copyCache);
 deleteLocalBtn.addEventListener('click', deleteLocalData);
 expirationDays.addEventListener('change', saveExpirationSetting);
 
