@@ -31,28 +31,40 @@ StorageManager.ready().then(function() {
 
         // check if following
         var following = false;
-        var comments_a = sub.childNodes[9];
+        var item_id = null;
+        var comments = 0;
 
-        if (comments_a) { // if a real news item, and not just a yc announcement
-            var item_id = comments_a.href.match(/[0-9]+/)[0];
-            var comments = comments_a.innerText.match(/[0-9]+/) ? comments_a.innerText.match(/[0-9]+/)[0]*1 : 0;
+        // Find the comments link (contains "item?id=" in href)
+        var comments_a = $(sub).find('a[href^="item?id="]').last();
+
+        if (comments_a.length > 0) {
+            var id_match = comments_a.attr("href").match(/id=([0-9]+)/);
+            if (id_match) {
+                item_id = id_match[1];
+            }
+            var comments_match = comments_a.text().match(/[0-9]+/);
+            comments = comments_match ? parseInt(comments_match[0], 10) : 0;
 
             // if following, check the number of comments and highlight
-            if (followed_items[item_id]) {
+            if (item_id && followed_items[item_id]) {
                 following = true;
                 mainlink.css({color: "#7070b0"});
                 var unread_comments = comments - followed_items[item_id].read_comments;
 
                 if (unread_comments > 0) {
-                    $(comments_a).text("unread comments: "+unread_comments+"/"+comments).css({color: "green"});
+                    comments_a.text("unread comments: "+unread_comments+"/"+comments).css({color: "green"});
                 }
 
                 mainlink.data("following", true);
             }
         }
 
+        // Use item_id if available, otherwise fall back to URL
+        var storage_key = item_id || mainlink.attr("href");
+        mainlink.data("storage_key", storage_key);
+
         // check if marked, and give the read color if it was marked
-        if (marked_read_urls[mainlink.attr("href")] && !following) {
+        if (marked_read_urls[storage_key] && !following) {
             mainlink.css({color: "#828282"});
             titles_marked++;
             hideShowRow(mainlink);
@@ -79,12 +91,13 @@ StorageManager.ready().then(function() {
         $(".mark_all_read").click(function () {
             $(".subtext").each(function(i,sub) {
             var mainlink = $(".title a", $(sub).parent().prev()).first()
+            var storage_key = mainlink.data("storage_key");
 
-                // add the link to the "read" ones
-                if (!marked_read_urls[mainlink.attr("href")]) {
-                    // add the url to the read ones
-                    marked_read_urls[mainlink.attr("href")] = (new Date()).getTime();
-                    StorageManager.markUrlAsRead(mainlink.attr("href"));
+                // add the item to the "read" ones
+                if (storage_key && !marked_read_urls[storage_key]) {
+                    // add to the read ones (using item ID or URL)
+                    marked_read_urls[storage_key] = (new Date()).getTime();
+                    StorageManager.markUrlAsRead(storage_key);
 
                     // give the "read" color
                     mainlink.css({color: "#828282"});
