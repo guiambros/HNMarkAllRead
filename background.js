@@ -181,6 +181,7 @@ async function getLocalData() {
       'followed_items',
       'hide_marked_urls',
       'hide_marked_comments',
+      'expiration_days',
       'sync_metadata'
     ], resolve);
   });
@@ -236,18 +237,20 @@ function mergeData(local, remote) {
   // Merge preferences (local wins for preferences)
   merged.hide_marked_urls = local.hide_marked_urls ?? remote.hide_marked_urls ?? false;
   merged.hide_marked_comments = local.hide_marked_comments ?? remote.hide_marked_comments ?? false;
+  merged.expiration_days = local.expiration_days ?? remote.expiration_days ?? 4;
 
   return merged;
 }
 
 /**
- * Clean up old data (older than 4 days)
+ * Clean up old data based on configured expiration
  * @param {object} data - Data to clean
  * @returns {object} Cleaned data
  */
 function cleanupOldData(data) {
   const now = Date.now();
-  const maxAge = 4 * 24 * 60 * 60 * 1000; // 4 days
+  const days = data.expiration_days || 4;
+  const maxAge = days * 24 * 60 * 60 * 1000;
 
   const cleaned = { ...data };
   const timestampKeys = ['marked_read_urls', 'marked_read_comments', 'followed_items'];

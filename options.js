@@ -17,6 +17,8 @@ const debugOutput = document.getElementById('debug-output');
 const statUrls = document.getElementById('stat-urls');
 const statComments = document.getElementById('stat-comments');
 const statFollowed = document.getElementById('stat-followed');
+const expirationDays = document.getElementById('expiration-days');
+const saveIndicator = document.getElementById('save-indicator');
 
 /**
  * Update the UI based on sync status
@@ -217,6 +219,43 @@ async function deleteLocalData() {
 }
 
 /**
+ * Load expiration setting
+ */
+async function loadExpirationSetting() {
+  try {
+    const data = await chrome.runtime.sendMessage({ action: 'getLocalData' });
+    const days = data.expiration_days || 4;
+    expirationDays.value = days.toString();
+  } catch (error) {
+    console.error('Error loading expiration setting:', error);
+  }
+}
+
+/**
+ * Save expiration setting
+ */
+async function saveExpirationSetting() {
+  const days = parseInt(expirationDays.value, 10);
+  try {
+    await chrome.runtime.sendMessage({
+      action: 'setLocalData',
+      data: { expiration_days: days }
+    });
+
+    // Show save indicator immediately
+    saveIndicator.classList.add('visible');
+    setTimeout(() => {
+      saveIndicator.classList.remove('visible');
+    }, 2000);
+
+    // Trigger sync in background (don't wait)
+    chrome.runtime.sendMessage({ action: 'sync' });
+  } catch (error) {
+    console.error('Error saving expiration setting:', error);
+  }
+}
+
+/**
  * Delete remote data from Google Drive
  */
 async function deleteRemoteData() {
@@ -252,9 +291,11 @@ deleteRemoteBtn.addEventListener('click', deleteRemoteData);
 showCacheBtn.addEventListener('click', showCache);
 hideCacheBtn.addEventListener('click', hideCache);
 deleteLocalBtn.addEventListener('click', deleteLocalData);
+expirationDays.addEventListener('change', saveExpirationSetting);
 
 // Initialize
 updateUI();
+loadExpirationSetting();
 
 // Refresh UI periodically
 setInterval(updateUI, 30000);

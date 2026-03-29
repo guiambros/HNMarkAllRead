@@ -10,7 +10,8 @@ const StorageManager = {
     marked_read_comments: {},
     followed_items: {},
     hide_marked_urls: false,
-    hide_marked_comments: false
+    hide_marked_comments: false,
+    expiration_days: 4
   },
 
   _initialized: false,
@@ -110,7 +111,8 @@ const StorageManager = {
       'marked_read_comments',
       'followed_items',
       'hide_marked_urls',
-      'hide_marked_comments'
+      'hide_marked_comments',
+      'expiration_days'
     ]);
 
     this._cache.marked_read_urls = data.marked_read_urls || {};
@@ -118,17 +120,19 @@ const StorageManager = {
     this._cache.followed_items = data.followed_items || {};
     this._cache.hide_marked_urls = data.hide_marked_urls || false;
     this._cache.hide_marked_comments = data.hide_marked_comments || false;
+    this._cache.expiration_days = data.expiration_days || 4;
 
-    // Clean up old data (older than 4 days)
+    // Clean up old data based on configured expiration
     this._cleanupOldData();
   },
 
   /**
-   * Clean up data older than 4 days
+   * Clean up data older than configured expiration
    */
   _cleanupOldData() {
     const now = Date.now();
-    const maxAge = 4 * 24 * 60 * 60 * 1000; // 4 days
+    const days = this._cache.expiration_days || 4;
+    const maxAge = days * 24 * 60 * 60 * 1000;
     let changed = false;
 
     // Clean marked_read_urls
