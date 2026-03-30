@@ -17,6 +17,31 @@ let syncState = {
 };
 
 /**
+ * Update and persist the last sync time
+ * @param {number} time - Timestamp to store
+ */
+async function updateLastSyncTime(time) {
+  syncState.lastSyncTime = time;
+  await new Promise((resolve) => {
+    chrome.storage.local.set({ last_sync_time: time }, resolve);
+  });
+}
+
+/**
+ * Restore sync state from storage on service worker startup
+ */
+async function restoreSyncState() {
+  return new Promise((resolve) => {
+    chrome.storage.local.get(['last_sync_time'], (data) => {
+      if (data.last_sync_time) {
+        syncState.lastSyncTime = data.last_sync_time;
+      }
+      resolve();
+    });
+  });
+}
+
+/**
  * Get OAuth token using Chrome Identity API
  * @param {boolean} interactive - Whether to show auth prompt
  * @returns {Promise<string>} Access token
@@ -302,7 +327,7 @@ async function performSync(forcePush = false) {
       };
       await createSyncFile(syncData);
       await setLocalData(syncData);
-      syncState.lastSyncTime = Date.now();
+      await updateLastSyncTime(Date.now());
 
       return { success: true, action: 'created' };
     }
@@ -334,7 +359,7 @@ async function performSync(forcePush = false) {
       await setLocalData(merged);
     }
 
-    syncState.lastSyncTime = Date.now();
+    await updateLastSyncTime(Date.now());
     return { success: true, action: 'synced' };
 
   } catch (error) {
@@ -416,8 +441,19 @@ async function deleteLocalData() {
 
 /**
  * Get current sync status
+ * Checks for valid cached token to determine authentication state
  */
-function getSyncStatus() {
+async function getSyncStatus() {
+  // Check if we have a valid cached token (non-interactive)
+  if (!syncState.isAuthenticated) {
+    try {
+      await getAuthToken(false);
+      // If we get here, we have a valid token
+    } catch {
+      // No valid token, isAuthenticated remains false
+    }
+  }
+
   return {
     isAuthenticated: syncState.isAuthenticated,
     isSyncing: syncState.isSyncing,
@@ -445,7 +481,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         return signOut();
 
       case 'getSyncStatus':
-        return getSyncStatus();
+        return await getSyncStatus();
 
       case 'getLocalData':
         return getLocalData();
@@ -483,11 +519,13 @@ chrome.alarms.onAlarm.addListener((alarm) => {
   }
 });
 
-// Sync when extension starts (if authenticated)
-getAuthToken(false)
-  .then(() => performSync())
-  .catch(() => {
-    // Not authenticated yet, that's okay
-  });
+// Restore sync state and sync when extension starts (if authenticated)
+restoreSyncState().then(() => {
+  getAuthToken(false)
+    .then(() => performSync())
+    .catch(() => {
+      // Not authenticated yet, that's okay
+    });
+});
 
 console.log('HN Mark All Read: Background service worker loaded');
