@@ -347,8 +347,9 @@ async function performSync(forcePush = false) {
       await updateSyncFile(fileInfo.id, syncData);
       await setLocalData(syncData);
     } else {
-      // Merge local and remote
-      const merged = mergeData(localData, remoteData);
+      // Merge local and remote, then clean up expired items
+      let merged = mergeData(localData, remoteData);
+      merged = cleanupOldData(merged);
       merged.sync_metadata = {
         lastModified: Date.now(),
         version: (remoteData.sync_metadata?.version || 0) + 1
